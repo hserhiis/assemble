@@ -539,7 +539,7 @@ export default function BookingPage() {
                 <div className="relative group" ref={suggestionRef}>
                   <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-blue-500 transition-colors" size={18} />
                   <input name="address" placeholder={t.addressPlaceholder} required value={address} onFocus={() => setShowSuggestions(true)} onChange={(e) => setAddress(e.target.value)}
-                         className="w-full p-5 md:p-7 pl-14 md:pl-16 bg-white/[0.04] rounded-2xl md:rounded-3xl border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] outline-none transition-all placeholder:text-zinc-600 text-white font-medium text-base md:text-lg" />
+                         className="w-full p-5 md:p-7 pl-14 md:pl-16 bg-white/[0.04] rounded-2xl md:rounded-3xl border border-gray-200/15 focus:border-blue-500 focus:bg-white/[0.08] outline-none transition-all placeholder:text-zinc-600 text-white font-medium text-base md:text-lg" />
                   {showSuggestions && suggestions.length > 0 && (
                       <div className="absolute z-50 w-full mt-2 bg-zinc-900/95 backdrop-blur-3xl border border-white/10 rounded-2xl md:rounded-[2rem] overflow-hidden shadow-2xl">
                         {suggestions.map((s, i) => (
@@ -553,11 +553,14 @@ export default function BookingPage() {
                   )}
                 </div>
 
+                <input name="phone" type="tel" placeholder={t.phone} required
+                       className="w-full p-5 md:p-7 bg-white/[0.04] rounded-2xl md:rounded-3xl border border-gray-200/15 focus:border-blue-500 focus:bg-white/[0.08] outline-none transition-all placeholder:text-zinc-600 text-white font-medium text-base md:text-lg" />
                 <textarea name="desc" placeholder={t.descPlaceholder} required
-                          className="w-full p-5 md:p-7 bg-white/[0.04] rounded-2xl md:rounded-3xl border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] outline-none transition-all placeholder:text-zinc-600 text-white font-medium text-base md:text-lg h-36 md:h-44 resize-none" />
+                          className="w-full p-5 md:p-7 bg-white/[0.04] rounded-2xl md:rounded-3xl border border-gray-200/15 focus:border-blue-500 focus:bg-white/[0.08] outline-none transition-all placeholder:text-zinc-600 text-white font-medium text-base md:text-lg h-36 md:h-44 resize-none" />
+
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                  <label className="flex flex-col gap-4 p-5 bg-white/[0.04] rounded-3xl border border-white/5 hover:border-white/20 transition-all cursor-pointer group">
+                  <label className="flex flex-col gap-4 p-5 bg-white/[0.04] rounded-3xl border border-gray-200/15 hover:border-white/20 transition-all cursor-pointer group">
                     <input
                         type="file"
                         multiple
@@ -580,8 +583,7 @@ export default function BookingPage() {
                       </div>
                     </div>
                   </label>
-                  <input name="phone" type="tel" placeholder={t.phone} required
-                         className="w-full p-5 md:p-7 bg-white/[0.04] rounded-2xl md:rounded-3xl border border-white/5 focus:border-blue-500 focus:bg-white/[0.08] outline-none transition-all placeholder:text-zinc-600 text-white font-medium text-base md:text-lg" />
+
                 </div>
                 {files.length > 0 && (
                     <div className="flex gap-3 overflow-x-auto py-2 no-scrollbar">
@@ -663,10 +665,10 @@ export default function BookingPage() {
                 </div>
 
                 {/* Чекбокс согласия */}
-                <label className="flex items-start gap-4 cursor-pointer group px-4 py-2">
+                <label className="flex items-center gap-4 cursor-pointer group px-4 py-2">
                   <div className="relative mt-0.5">
                     <input type="checkbox" required className="sr-only peer" />
-                    <div className="w-5 h-5 border-2 border-white/10 rounded-lg peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-300" />
+                    <div className="w-5 h-5 border-2 border-gray-200/25 rounded-lg peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-300" />
                     <CheckCircle2 className="absolute inset-0 m-auto text-white scale-0 peer-checked:scale-75 transition-transform duration-300" size={16} />
                   </div>
                   <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-snug group-hover:text-zinc-400 transition-colors">
