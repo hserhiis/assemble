@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState, useMemo } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import {
     Loader2, LogOut, Users, Euro, Package,
     Calendar, Clock, Trash2, Phone, Save,
@@ -11,11 +10,7 @@ import {
 } from 'lucide-react';
 import {cn} from "@/lib/utils";
 
-// Инициализация Supabase
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from "@/lib/supabase";
 
 // Конфигурация статусов
 const STATUS_MAP: any = {
@@ -71,14 +66,16 @@ export default function AdminPage() {
     const [isResetMode, setIsResetMode] = useState(false);
 
     useEffect(() => {
+        // 1. Проверяем текущую сессию
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             if (session) fetchAllData();
             setLoading(false);
         });
 
+        // 2. Подписываемся на изменения (логин, логаут, восстановление пароля)
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log("Auth Event:", event); // Посмотри в консоль, прилетает ли PASSWORD_RECOVERY
+            console.log("Auth Event:", event);
 
             if (event === "PASSWORD_RECOVERY") {
                 setIsResetMode(true);
@@ -88,9 +85,11 @@ export default function AdminPage() {
             if (session) fetchAllData();
         });
 
+        // Чистим подписку при размонтировании
         return () => subscription.unsubscribe();
-    }, []);
+    }, []); // Этот эффект запускается только один раз при старте
 
+// Внутри fetchAllData (которую ты вызываешь выше) добавь логику цен:
     async function fetchAllData() {
         setIsSyncing(true);
         try {
@@ -102,10 +101,12 @@ export default function AdminPage() {
 
             setOrders(bookingsRes.data || []);
             setStaff(staffRes.data || []);
+
             if (settingsRes.data) {
+                // Вот тут мы гарантируем, что цены стали числами
                 setPricing({
-                    initial: settingsRes.data.initial_price,
-                    extra: settingsRes.data.extra_price
+                    initial: Number(settingsRes.data.initial_price),
+                    extra: Number(settingsRes.data.extra_price)
                 });
             }
         } catch (err) {
@@ -130,6 +131,27 @@ export default function AdminPage() {
     const updateOrderStatus = async (id: string, newStatus: string) => {
         const { error } = await supabase.from('bookings').update({ status: newStatus }).eq('id', id);
         if (!error) setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+    };
+
+    const syncRates = async () => {
+        setIsSyncing(true);
+        console.log("Syncing payload:", { initial: pricing.initial, extra: pricing.extra }); // Проверь в консоли!
+
+        const { error } = await supabase
+            .from('settings')
+            .upsert({
+                id: 'pricing',
+                initial_price: Number(pricing.initial), // Принудительно в число
+                extra_price: Number(pricing.extra),     // Принудительно в число
+            }, { onConflict: 'id' }); // Важно! Говорим базе обновлять по ID
+
+        if (error) {
+            console.error("Supabase Error:", error);
+            alert("Sync Error: " + error.message);
+        } else {
+            alert("Rates synchronized successfully.");
+            setIsSyncing(false);
+        }
     };
 
     const addStaff = async (e: any) => {
@@ -347,21 +369,24 @@ export default function AdminPage() {
                                 <h2 className="lg:hidden text-3xl font-black italic text-white mb-8 uppercase tracking-tighter">Command Center</h2>
 
                                 {/* Rate Controller */}
-                                <section className="bg-white/[0.03] lg:bg-[#0A0A0A] rounded-[32px] p-6 border border-white/5">
+                                <section className="bg-[#0A0A0A] rounded-[32px] p-6 border border-white/5">
                                     <div className="flex items-center gap-3 mb-6">
                                         <TrendingUp size={16} className="text-blue-500" />
                                         <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Rates</span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {/* Твои инпуты Primary/Extra */}
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
                                         <div className="bg-black/40 p-4 rounded-2xl border border-white/[0.03]">
+                                            <label className="text-[8px] uppercase text-zinc-600 block mb-1">Base</label>
                                             <input type="number" value={pricing.initial} onChange={e => setPricing({...pricing, initial: parseInt(e.target.value)})} className="bg-transparent w-full text-xl font-black italic outline-none text-white" />
                                         </div>
                                         <div className="bg-black/40 p-4 rounded-2xl border border-white/[0.03]">
+                                            <label className="text-[8px] uppercase text-zinc-600 block mb-1">Extra</label>
                                             <input type="number" value={pricing.extra} onChange={e => setPricing({...pricing, extra: parseInt(e.target.value)})} className="bg-transparent w-full text-xl font-black italic outline-none text-white" />
                                         </div>
                                     </div>
-                                    <button onClick={async () => { /* твоя функция */ setIsMenuOpen(false); }} className="w-full mt-4 py-3 bg-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest text-white">Sync Rates</button>
+                                    <button onClick={syncRates} className="w-full py-3 bg-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-500 transition-all">
+                                        {isSyncing ? "Syncing..." : "Sync Rates"}
+                                    </button>
                                 </section>
 
                                 {/* Personnel */}
@@ -384,7 +409,7 @@ export default function AdminPage() {
                                                 </div>
                                                 <button
                                                     onClick={() => deleteStaff(s.id)}
-                                                    className="opacity-0 group-hover:opacity-100 p-1.5 text-red-900 hover:text-red-500 transition-all"
+                                                    className="group-hover:opacity-100 p-1.5 text-red-900 hover:text-red-500 transition-all"
                                                 >
                                                     <Trash2 size={14}/>
                                                 </button>

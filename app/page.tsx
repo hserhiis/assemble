@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef, useMemo} from 'react';
 import {
   Camera,
   CheckCircle2,
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import {supabase} from "@/lib/supabase";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -33,7 +34,7 @@ const translations = {
     systemReady: "System Ready",
     precision: "Precision",
     deployment: "Deployment",
-    heroDesc: "Engineered hardware installation for residential and commercial spaces.",
+    heroDesc: "Precision furniture assembly for residential and commercial interiors.",
     extension: "Hourly Rate",
     perHour: "Per Hour of Work",
     minOrder: "2h Minimum Order",
@@ -62,13 +63,15 @@ const translations = {
     hoursLabel: "Estimated Hours",
     payAfter: "Pay after deployment",
     noUpfront: "No upfront payment required",
-    secureBooking: "Secure reservation • Payment on-site"
+    secureBooking: "Secure reservation • Payment on-site",
+    calculating: "Calculating...",
+    bookButton: "Book for"
   },
   ee: {
     systemReady: "Süsteem Valmis",
     precision: "Täppis",
     deployment: "Paigaldus",
-    heroDesc: "Projekteeritud riistvara paigaldus elu- ja äripindadele.",
+    heroDesc: "Professionaalne mööbli kokkupanek ja paigaldus elu- ning äripindadele.",
     extension: "Tunnihind",
     perHour: "Töötund",
     minOrder: "Minimaalne tellimus 2h",
@@ -97,7 +100,9 @@ const translations = {
     hoursLabel: "Eeldatavad tunnid",
     payAfter: "Tasumine pärast tööd",
     noUpfront: "Ettemaksu ei ole vaja",
-    secureBooking: "Turvaline broneering • Tasumine kohapeal"
+    secureBooking: "Turvaline broneering • Tasumine kohapeal",
+    calculating: "Arvutamine...",
+    bookButton: "Telli hinnaga"
   }
 };
 
@@ -114,9 +119,20 @@ export default function BookingPage() {
 
   // LOGIC: Pure hourly rate
   const [hours, setHours] = useState(2);
-  const [pricing, setPricing] = useState({ initial: 30, extra: 25 });
-  const totalPrice = pricing.initial + (hours - 1) * pricing.extra;
-  const HOURLY_RATE = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(pricing.initial);
+  const [pricing, setPricing] = useState<{initial: number, extra: number} | null>(null);  const [isPricingLoading, setIsPricingLoading] = useState(true);
+
+  const totalPrice = useMemo(() => {
+    // Проверка на дурака: если данные еще грузятся, ставим 0 или базу
+    if (!pricing?.initial) return 0;
+
+    const hoursNum = parseInt(hours.toString()) || 2;
+    // Сама логика: первый час — база, остальные — экстра
+    return pricing?.initial + Math.max(0, hoursNum - 1) * pricing.extra;
+  }, [hours, pricing]);
+  const HOURLY_RATE = useMemo(() => {
+    if (!pricing) return null;
+    return new Intl.NumberFormat('de-DE').format(pricing.initial); // de-DE лучше для евро (запятая вместо точки)
+  }, [pricing]);
 
   const [availability, setAvailability] = useState({
     staffLimit: 0,
@@ -136,18 +152,20 @@ export default function BookingPage() {
 
   useEffect(() => {
     async function fetchPricing() {
-      try {
-        const res = await fetch(`/api/pricing`); // Создай этот эндпоинт или тяни напрямую через supabase client
-        if (res.ok) {
-          const data = await res.json();
-          setPricing({
-            initial: data.initial_price,
-            extra: data.extra_price
-          });
-        }
-      } catch (err) {
-        console.error("Failed to sync rates", err);
+      setIsPricingLoading(true);
+      const { data, error } = await supabase
+          .from('settings')
+          .select('initial_price, extra_price')
+          .eq('id', 'pricing')
+          .single();
+
+      if (data && !error) {
+        setPricing({
+          initial: Number(data.initial_price),
+          extra: Number(data.extra_price)
+        });
       }
+      setIsPricingLoading(false);
     }
     fetchPricing();
   }, []);
@@ -313,14 +331,34 @@ export default function BookingPage() {
           <section className="mb-12">
             <div className="relative p-8 md:p-10 rounded-[2.5rem] md:rounded-[3rem] bg-white/[0.02] border border-white/10 backdrop-blur-2xl overflow-hidden group">
               <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-600/10 blur-[80px] rounded-full group-hover:bg-blue-600/20 transition-all duration-700" />
+
               <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 mb-4 block">{t.extension}</span>
+        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-500 mb-4 block">
+          {t.extension}
+        </span>
+
                   <div className="flex items-baseline text-white">
-                    <span className="text-6xl md:text-8xl font-semibold tracking-tighter">{HOURLY_RATE}</span>
-                    <span className="text-2xl ml-2 text-zinc-600 font-light">€</span>
+                    {isPricingLoading ? (
+                        // СПИННЕР вместо цены
+                        <div className="flex items-center gap-3 py-4">
+                          <Loader2 className="animate-spin text-blue-600" size={40} />
+                          <span className="text-zinc-500 text-xs font-black uppercase tracking-widest animate-pulse">
+                Syncing Rates...
+              </span>
+                        </div>
+                    ) : (
+                        // ЦЕНА когда данные загружены
+                        <>
+              <span className="text-6xl md:text-8xl font-semibold tracking-tighter">
+                {HOURLY_RATE}
+              </span>
+                          <span className="text-2xl ml-2 text-zinc-600 font-light">€</span>
+                        </>
+                    )}
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 text-zinc-400">
                     <Timer size={18} className="text-blue-500" />
@@ -519,7 +557,14 @@ export default function BookingPage() {
                     </div>
 
                     <div className="flex items-baseline">
-                      <span className="text-7xl md:text-8xl font-black tracking-tighter leading-none">{totalPrice}</span>
+                      <span className="text-4xl md:text-6xl font-black tracking-tighter leading-none">{isPricingLoading ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 size={14} className="animate-spin" />
+                            <span>{t.calculating}</span>
+                          </div>
+                      ) : (
+                          `${t.bookButton} €${totalPrice}`
+                      )}</span>
                       <span className="text-2xl md:text-3xl ml-3 font-light opacity-80">€</span>
                     </div>
 
