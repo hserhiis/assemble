@@ -76,8 +76,22 @@ export default function AdminPage() {
             setLoading(false);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             setSession(session);
+
+            // --- НОВАЯ ЛОГИКА ТУТ ---
+            if (event === "PASSWORD_RECOVERY") {
+                const newPass = prompt("Enter your new secure passkey:");
+                if (newPass && newPass.length >= 6) {
+                    const { error } = await supabase.auth.updateUser({ password: newPass });
+                    if (error) alert("Sync Error: " + error.message);
+                    else alert("Passkey updated successfully. System ready.");
+                } else {
+                    alert("Invalid passkey length.");
+                }
+            }
+            // ------------------------
+
             if (session) fetchAllData();
         });
 
