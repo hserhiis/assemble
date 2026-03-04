@@ -65,7 +65,13 @@ const translations = {
     noUpfront: "No upfront payment required",
     secureBooking: "Secure reservation • Payment on-site",
     calculating: "Calculating...",
-    bookButton: "Book for"
+    bookButton: "Book for",
+    callWait: "Our specialist will contact you within 60 minutes to confirm the details.",
+    orderSummary: "Expedition Details",
+    detailsDate: "Date",
+    detailsSlot: "Time Window",
+    detailsPrice: "Estimated Total",
+    totalText: "total",
   },
   ee: {
     systemReady: "Süsteem Valmis",
@@ -102,7 +108,13 @@ const translations = {
     noUpfront: "Ettemaksu ei ole vaja",
     secureBooking: "Turvaline broneering • Tasumine kohapeal",
     calculating: "Arvutamine...",
-    bookButton: "Telli hinnaga"
+    bookButton: "Telli hinnaga",
+    callWait: "Meie spetsialist võtab teiega üksikasjade kinnitamiseks ühendust 60 minuti jooksul.",
+    orderSummary: "Ekspeditsiooni andmed",
+    detailsDate: "Kuupäev",
+    detailsSlot: "Ajaaken",
+    detailsPrice: "Eeldatav maksumus",
+    totalText: "Kokku",
   }
 };
 
@@ -276,13 +288,64 @@ export default function BookingPage() {
   }
 
   if (sent) return (
-      <div className="min-h-screen flex items-center justify-center bg-black p-6 text-white font-sans">
-        <div className="relative p-8 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-3xl text-center space-y-8 animate-in zoom-in duration-1000 shadow-2xl w-full max-w-sm">
-          <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto shadow-[0_0_60px_rgba(37,99,235,0.4)]">
-            <CheckCircle2 size={40} strokeWidth={2} />
+      <div className="min-h-screen flex items-center justify-center bg-black p-6 text-white font-sans selection:bg-blue-500/30">
+        <div className="relative w-full max-w-md space-y-6 animate-in fade-in zoom-in duration-700">
+
+          {/* Главная карточка успеха */}
+          <div className="relative p-8 md:p-10 rounded-[2.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-3xl text-center space-y-6 shadow-2xl overflow-hidden">
+            <div className="absolute -right-10 -top-10 w-32 h-32 bg-blue-600/20 blur-[60px] rounded-full" />
+
+            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto shadow-[0_0_50px_rgba(37,99,235,0.4)] relative z-10">
+              <CheckCircle2 size={40} strokeWidth={2} className="animate-in zoom-in delay-300 duration-500" />
+            </div>
+
+            <div className="space-y-3 relative z-10">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight italic uppercase">{t.confirmed}</h1>
+              <p className="text-zinc-400 text-sm md:text-base leading-relaxed px-4">
+                {t.callWait}
+              </p>
+            </div>
+
+            {/* Мини-сводка заказа */}
+            <div className="bg-white/5 rounded-3xl p-6 text-left space-y-4 border border-white/5">
+              <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">{t.orderSummary}</h2>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[9px] uppercase text-zinc-500 font-bold mb-1">{t.detailsDate}</p>
+                  <p className="text-sm font-semibold">{new Date(selectedDate).toLocaleDateString(lang, { day: 'numeric', month: 'long' })}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase text-zinc-500 font-bold mb-1">{t.detailsSlot}</p>
+                  <p className="text-sm font-semibold">{SLOTS.find(s => s.id === selectedSlotId)?.time}</p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-white/5 flex justify-between items-end">
+                <div>
+                  <p className="text-[9px] uppercase text-zinc-500 font-bold mb-1">{t.detailsPrice}</p>
+                  <p className="text-2xl font-black italic">€{totalPrice}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] uppercase text-zinc-500 font-bold mb-1">{t.hoursLabel}</p>
+                  <p className="text-sm font-bold">{hours}h</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+                onClick={() => window.location.reload()}
+                className="w-full py-5 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all active:scale-95 shadow-xl"
+            >
+              {t.done}
+            </button>
           </div>
-          <h1 className="text-4xl font-semibold tracking-tight italic">{t.confirmed}</h1>
-          <button onClick={() => setSent(false)} className="w-full py-4 bg-white text-black rounded-full font-bold hover:bg-zinc-200 transition-all active:scale-95">{t.done}</button>
+
+          {/* Дополнительный футер на экране успеха */}
+          <div className="flex items-center justify-center gap-3 opacity-40">
+            <ShieldCheck size={14} className="text-blue-500" />
+            <span className="text-[9px] font-bold uppercase tracking-widest">{t.secureBooking}</span>
+          </div>
         </div>
       </div>
   );
@@ -540,52 +603,75 @@ export default function BookingPage() {
 
               {/* Dynamic Price Calculation Section */}
               <section className="space-y-6">
-                <div className="relative overflow-hidden p-8 md:p-10 bg-blue-600 rounded-[2.5rem] md:rounded-[3.5rem] text-white shadow-2xl shadow-blue-600/30 group transition-all duration-500 hover:scale-[1.01]">
-                  <div className="absolute right-0 top-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
-                    <Zap size={120} fill="white" />
-                  </div>
+                <div className="relative overflow-hidden p-8 md:p-10 rounded-[2.5rem] md:rounded-[3.5rem] bg-white/[0.03] border border-white/10 backdrop-blur-3xl shadow-2xl group transition-all duration-500">
+                  {/* Мягкое свечение вместо яркого фона */}
+                  <div className="absolute -right-20 -top-20 w-64 h-64 bg-blue-600/10 blur-[100px] rounded-full group-hover:bg-blue-600/20 transition-all duration-700" />
 
                   <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-black uppercase tracking-[0.4em] opacity-60 block">
-                        {t.priceLabel}
-                      </span>
-                      {/* НОВАЯ ПОДСКАЗКА ТУТ */}
-                      <span className="bg-white/10 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border border-white/20">
-                        {t.payAfter}
-                       </span>
+                    <div className="flex justify-between items-start mb-8">
+                      <div className="space-y-1">
+          <span className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500 block">
+            {t.priceLabel}
+          </span>
+                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest leading-relaxed">
+                          {t.priceSubtext}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+           <span className="bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-500/20">
+            {t.payAfter}
+           </span>
+                      </div>
                     </div>
 
-                    <div className="flex items-baseline">
-                      <span className="text-4xl md:text-6xl font-black tracking-tighter leading-none">{isPricingLoading ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <Loader2 size={14} className="animate-spin" />
-                            <span>{t.calculating}</span>
-                          </div>
-                      ) : (
-                          `${t.bookButton} €${totalPrice}`
-                      )}</span>
-                      <span className="text-2xl md:text-3xl ml-3 font-light opacity-80">€</span>
-                    </div>
-
-                    <div className="mt-10 flex items-center gap-3 pt-6 border-t border-white/10">
-                      <AlertCircle size={18} />
-                      <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">
-                        {t.priceSubtext} — <span className="opacity-60">{t.priceDisclaimer}</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-baseline gap-2">
+                        {isPricingLoading ? (
+                            <div className="flex items-center gap-3 py-2">
+                              <Loader2 size={24} className="animate-spin text-blue-500" />
+                              <span className="text-zinc-500 text-xs font-bold uppercase tracking-[0.2em] animate-pulse">
+                {t.calculating}
+              </span>
+                            </div>
+                        ) : (
+                            <>
+              <span className="text-4xl md:text-6xl font-black tracking-tighter text-white">
+                €{totalPrice}
+              </span>
+                              <span className="text-xl font-light text-zinc-500 lowercase">
+                / {`${hours}h ${t.totalText}`}
+              </span>
+                            </>
+                        )}
+                      </div>
+                      <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+                        {t.priceDisclaimer}
                       </p>
+                    </div>
+
+                    {/* Разделитель и мелкие детали */}
+                    <div className="mt-8 pt-8 border-t border-white/5 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-blue-500">
+                        <ShieldCheck size={20} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-white font-bold uppercase tracking-tight">{t.noUpfront}</span>
+                        <span className="text-[9px] text-zinc-600 font-medium uppercase tracking-widest">{t.secureBooking}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <label className="flex items-start gap-4 cursor-pointer group px-2">
+                {/* Чекбокс согласия */}
+                <label className="flex items-start gap-4 cursor-pointer group px-4 py-2">
                   <div className="relative mt-0.5">
                     <input type="checkbox" required className="sr-only peer" />
-                    <div className="w-5 h-5 border-2 border-white/10 rounded-lg peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all" />
-                    <CheckCircle2 className="absolute inset-0 m-auto text-white scale-0 peer-checked:scale-75 transition-transform" size={16} />
+                    <div className="w-5 h-5 border-2 border-white/10 rounded-lg peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-300" />
+                    <CheckCircle2 className="absolute inset-0 m-auto text-white scale-0 peer-checked:scale-75 transition-transform duration-300" size={16} />
                   </div>
-                  <span className="text-[11px] text-zinc-500 font-medium leading-snug group-hover:text-zinc-400 transition-colors">
-                    {t.agreement}
-                  </span>
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-snug group-hover:text-zinc-400 transition-colors">
+      {t.agreement}
+    </span>
                 </label>
               </section>
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-dashed border-white/10 mb-6">
@@ -597,7 +683,9 @@ export default function BookingPage() {
                   <p className="text-[10px] text-zinc-500 uppercase font-medium">{t.secureBooking}</p>
                 </div>
               </div>
-              <button type="submit" disabled={loading || !selectedSlotId}
+              <button
+                  type="submit"
+                  disabled={loading || !selectedSlotId}
                       className="w-full py-6 md:py-8 bg-white text-black rounded-2xl font-black text-lg md:text-xl hover:bg-zinc-200 active:scale-95 transition-all disabled:bg-zinc-900 disabled:text-zinc-700 shadow-xl">
                 {loading ? t.transmitting : t.bookBtn}
               </button>
