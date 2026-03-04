@@ -132,6 +132,23 @@ export default function AdminPage() {
         if (!error) setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
     };
 
+    const addStaff = async (e: any) => {
+        if (e.key === 'Enter' && e.target.value.trim()) {
+            const name = e.target.value.trim();
+            const { data, error } = await supabase
+                .from('staff')
+                .insert([{ name }])
+                .select();
+
+            if (error) {
+                alert("Error adding operative: " + error.message);
+            } else if (data) {
+                setStaff([...staff, data[0]]);
+                e.target.value = ''; // Чистим поле
+            }
+        }
+    };
+
     // НОВАЯ ФИЧА: Назначение исполнителя
     const assignUnit = async (orderId: string, unitName: string) => {
         const isUnassigned = unitName === 'unassigned';
@@ -349,17 +366,43 @@ export default function AdminPage() {
 
                                 {/* Personnel */}
                                 <section className="bg-white/[0.03] lg:bg-[#0A0A0A] rounded-[32px] p-6 border border-white/5">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <Users size={16} className="text-blue-500" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Personnel</span>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <Users size={16} className="text-blue-500" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Personnel</span>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-zinc-700 bg-white/5 px-2 py-0.5 rounded-full">{staff.length}</span>
                                     </div>
-                                    <div className="space-y-2">
+
+                                    {/* Список сотрудников */}
+                                    <div className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-hide pr-1">
                                         {staff.map(s => (
-                                            <div key={s.id} className="flex items-center justify-between p-3 bg-black/40 rounded-xl border border-white/[0.02]">
-                                                <span className="text-xs font-bold">{s.name}</span>
-                                                <button onClick={() => deleteStaff(s.id)} className="text-red-900 hover:text-red-500"><Trash2 size={14}/></button>
+                                            <div key={s.id} className="flex items-center justify-between p-3 bg-black/40 rounded-xl border border-white/[0.02] group hover:border-white/10 transition-all">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
+                                                    <span className="text-xs font-bold text-zinc-300">{s.name}</span>
+                                                </div>
+                                                <button
+                                                    onClick={() => deleteStaff(s.id)}
+                                                    className="opacity-0 group-hover:opacity-100 p-1.5 text-red-900 hover:text-red-500 transition-all"
+                                                >
+                                                    <Trash2 size={14}/>
+                                                </button>
                                             </div>
                                         ))}
+                                    </div>
+
+                                    {/* Инпут добавления */}
+                                    <div className="mt-4 pt-4 border-t border-white/[0.03]">
+                                        <div className="relative">
+                                            <UserPlus size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+                                            <input
+                                                type="text"
+                                                placeholder="New operative + Enter"
+                                                onKeyDown={addStaff}
+                                                className="w-full bg-black/50 border border-white/5 rounded-xl pl-9 pr-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white placeholder:text-zinc-700 focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none transition-all"
+                                            />
+                                        </div>
                                     </div>
                                 </section>
 
