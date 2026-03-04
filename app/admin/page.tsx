@@ -68,6 +68,7 @@ export default function AdminPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSyncing, setIsSyncing] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [isResetMode, setIsResetMode] = useState(false);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -76,22 +77,14 @@ export default function AdminPage() {
             setLoading(false);
         });
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            setSession(session);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log("Auth Event:", event); // Посмотри в консоль, прилетает ли PASSWORD_RECOVERY
 
-            // --- НОВАЯ ЛОГИКА ТУТ ---
             if (event === "PASSWORD_RECOVERY") {
-                const newPass = prompt("Enter your new secure passkey:");
-                if (newPass && newPass.length >= 6) {
-                    const { error } = await supabase.auth.updateUser({ password: newPass });
-                    if (error) alert("Sync Error: " + error.message);
-                    else alert("Passkey updated successfully. System ready.");
-                } else {
-                    alert("Invalid passkey length.");
-                }
+                setIsResetMode(true);
             }
-            // ------------------------
 
+            setSession(session);
             if (session) fetchAllData();
         });
 
@@ -175,50 +168,91 @@ export default function AdminPage() {
         </div>
     );
 
-    if (!session) return (
-        <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6 font-sans antialiased">
-            <div className="w-full max-w-[400px] bg-[#0A0A0A] rounded-[40px] p-10 border border-white/5 shadow-[0_0_100px_rgba(0,0,0,1)]">
-                <div className="flex flex-col items-center mb-10">
-                    <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(37,99,235,0.3)] rotate-3">
-                        <Zap size={40} className="text-white fill-white" />
+    if (!session || isResetMode) {
+        return (
+            <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6 font-sans antialiased">
+                <div className="w-full max-w-[400px] bg-[#0A0A0A] rounded-[40px] p-10 border border-white/5 shadow-[0_0_100px_rgba(0,0,0,1)]">
+
+                    {/* Header (динамический) */}
+                    <div className="flex flex-col items-center mb-10">
+                        <div className={cn(
+                            "w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-2xl transition-all duration-700",
+                            isResetMode ? "bg-emerald-600 rotate-0" : "bg-blue-600 rotate-3"
+                        )}>
+                            {isResetMode ? <ShieldCheck size={40} className="text-white" /> : <Zap size={40} className="text-white fill-white" />}
+                        </div>
+                        <h1 className="text-3xl font-black italic uppercase tracking-tighter text-white">
+                            {isResetMode ? 'Secure Reset' : 'Assemble OS'}
+                        </h1>
+                        <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2 text-center">
+                            {isResetMode ? 'Establish new identity credentials' : 'Administrative Access Only'}
+                        </p>
                     </div>
-                    <h1 className="text-3xl font-black italic uppercase tracking-tighter text-white">Assemble OS</h1>
-                    <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest mt-2">Administrative Access Only</p>
-                </div>
-                <form onSubmit={async (e: any) => {
-                    e.preventDefault();
-                    const { error } = await supabase.auth.signInWithPassword({
-                        email: e.target.email.value,
-                        password: e.target.password.value
-                    });
-                    if (error) alert(error.message);
-                }} className="space-y-4">
-                    <div className="space-y-1">
-                        <label className="text-[9px] font-black text-zinc-700 uppercase ml-4">Identity</label>
-                        <input name="email" type="email" placeholder="root@system.ee" required className="w-full px-6 py-4 bg-black border border-white/5 rounded-2xl focus:border-blue-500 transition-all outline-none text-sm text-white font-medium shadow-inner" />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-[9px] font-black text-zinc-700 uppercase ml-4">Passkey</label>
-                        <input name="password" type="password" placeholder="••••••••" required className="w-full px-6 py-4 bg-black border border-white/5 rounded-2xl focus:border-blue-500 transition-all outline-none text-sm text-white font-medium shadow-inner" />
-                    </div>
-                    <button className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-200 transition-all active:scale-[0.97] mt-4 shadow-xl shadow-white/5">Authorize Session</button>
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            const email = (document.getElementsByName('email')[0] as HTMLInputElement).value;
-                            if (!email) return alert("Enter email first");
-                            const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+                    {/* Forms Logic */}
+                    {isResetMode ? (
+                        /* FORM: RESET PASSWORD */
+                        <form onSubmit={async (e: any) => {
+                            e.preventDefault();
+                            const newPass = e.target.new_password.value;
+                            const { error } = await supabase.auth.updateUser({ password: newPass });
                             if (error) alert(error.message);
-                            else alert("Reset link dispatched.");
-                        }}
-                        className="w-full text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em] hover:text-zinc-400 transition-colors pt-2"
-                    >
-                        Forgot Passkey?
-                    </button>
-                </form>
+                            else {
+                                alert("Identity updated. Access granted.");
+                                setIsResetMode(false);
+                                window.location.hash = "";
+                            }
+                        }} className="space-y-4 animate-in fade-in zoom-in duration-500">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-zinc-700 uppercase ml-4">New Passkey</label>
+                                <input name="new_password" type="password" placeholder="••••••••" required className="w-full px-6 py-4 bg-black border border-white/5 rounded-2xl focus:border-emerald-500 transition-all outline-none text-sm text-white font-medium" />
+                            </div>
+                            <button className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-500 transition-all active:scale-[0.97]">
+                                Update & Authorize
+                            </button>
+                        </form>
+                    ) : (
+                        /* FORM: LOGIN */
+                        <form onSubmit={async (e: any) => {
+                            e.preventDefault();
+                            const { error } = await supabase.auth.signInWithPassword({
+                                email: e.target.email.value,
+                                password: e.target.password.value
+                            });
+                            if (error) alert(error.message);
+                        }} className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-zinc-700 uppercase ml-4">Identity</label>
+                                <input name="email" type="email" placeholder="root@system.ee" required className="w-full px-6 py-4 bg-black border border-white/5 rounded-2xl focus:border-blue-500 transition-all outline-none text-sm text-white font-medium shadow-inner" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-zinc-700 uppercase ml-4">Passkey</label>
+                                <input name="password" type="password" placeholder="••••••••" required className="w-full px-6 py-4 bg-black border border-white/5 rounded-2xl focus:border-blue-500 transition-all outline-none text-sm text-white font-medium shadow-inner" />
+                            </div>
+                            <button className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-200 transition-all active:scale-[0.97] mt-4 shadow-xl shadow-white/5">
+                                Authorize Session
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const email = (document.getElementsByName('email')[0] as HTMLInputElement).value;
+                                    if (!email) return alert("Enter identity email first");
+                                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                                        redirectTo: window.location.href // Ссылка вернет юзера прямо сюда
+                                    });
+                                    if (error) alert(error.message);
+                                    else alert("Reset link dispatched to your secure terminal.");
+                                }}
+                                className="w-full text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em] hover:text-zinc-400 transition-colors pt-2 text-center"
+                            >
+                                Forgot Passkey?
+                            </button>
+                        </form>
+                    )}
+                </div>
             </div>
-        </div>
-    );
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#050505] text-[#E4E4E7] font-sans antialiased selection:bg-blue-500/30">
