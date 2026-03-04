@@ -188,6 +188,19 @@ export default function AdminPage() {
                         <input name="password" type="password" placeholder="••••••••" required className="w-full px-6 py-4 bg-black border border-white/5 rounded-2xl focus:border-blue-500 transition-all outline-none text-sm text-white font-medium shadow-inner" />
                     </div>
                     <button className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-200 transition-all active:scale-[0.97] mt-4 shadow-xl shadow-white/5">Authorize Session</button>
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            const email = (document.getElementsByName('email')[0] as HTMLInputElement).value;
+                            if (!email) return alert("Enter email first");
+                            const { error } = await supabase.auth.resetPasswordForEmail(email);
+                            if (error) alert(error.message);
+                            else alert("Reset link dispatched.");
+                        }}
+                        className="w-full text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em] hover:text-zinc-400 transition-colors pt-2"
+                    >
+                        Forgot Passkey?
+                    </button>
                 </form>
             </div>
         </div>
