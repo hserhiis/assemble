@@ -152,6 +152,22 @@ export default function AdminPage() {
         }
     };
 
+    const deleteStaff = async (id: string) => {
+        if (!confirm("Remove this operative from the system?")) return;
+
+        const { error } = await supabase
+            .from('staff')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            alert("Error removing staff: " + error.message);
+        } else {
+            // Обновляем локальный стейт, чтобы юзер сразу исчез из списка
+            setStaff(prev => prev.filter(s => s.id !== id));
+        }
+    };
+
     const copyToClipboard = (text: string, id: string) => {
         navigator.clipboard.writeText(text);
         setCopiedId(id);
@@ -341,7 +357,7 @@ export default function AdminPage() {
                                         {staff.map(s => (
                                             <div key={s.id} className="flex items-center justify-between p-3 bg-black/40 rounded-xl border border-white/[0.02]">
                                                 <span className="text-xs font-bold">{s.name}</span>
-                                                <button onClick={() => {/*...*/}} className="text-red-900 hover:text-red-500"><Trash2 size={14}/></button>
+                                                <button onClick={() => deleteStaff(s.id)} className="text-red-900 hover:text-red-500"><Trash2 size={14}/></button>
                                             </div>
                                         ))}
                                     </div>
