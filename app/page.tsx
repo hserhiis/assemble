@@ -1,5 +1,6 @@
 "use client";
 import React, {useState, useEffect, useRef, useMemo} from 'react';
+
 import {
   Camera,
   CheckCircle2,
@@ -13,6 +14,7 @@ import {
   Plus,
   Minus,
   Timer,
+  MessageCircle,
   X
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
@@ -705,6 +707,31 @@ export default function BookingPage() {
           .no-scrollbar::-webkit-scrollbar { display: none; }
           .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         `}</style>
+        {/* Floating WhatsApp Button */}
+        <a
+            href={`https://wa.me/37258335392?text=${encodeURIComponent(
+                lang === 'en'
+                    ? "Hello! I'm interested in furniture assembly in Tallinn. Could you help me?"
+                    : "Tere! Olen huvitatud mööbli kokkupanekust Tallinnas. Kas saaksite mind aidata?"
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="fixed bottom-24 right-6 z-[60] group flex items-center justify-center"
+        >
+          {/* Тултип */}
+          <span className="absolute right-full mr-4 px-4 py-2 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0 pointer-events-none whitespace-nowrap shadow-2xl">
+    {lang === 'en' ? 'Chat on WhatsApp' : 'Kirjuta meile'}
+  </span>
+
+          {/* Сама кнопка */}
+          <div className="w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(37,211,102,0.4)] hover:scale-110 active:scale-95 transition-all duration-300 relative overflow-hidden">
+            <MessageCircle size={28} fill="currentColor" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+
+          {/* Индикатор онлайн */}
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 border-4 border-black rounded-full animate-pulse" />
+        </a>
       </div>
   );
 }
