@@ -437,7 +437,7 @@ export default function BookingPage() {
           </section>
 
           <div className="relative rounded-[2.5rem] md:rounded-[3.5rem] bg-white/[0.01] border border-white/[0.08] backdrop-blur-[80px] shadow-2xl">
-            <form onSubmit={handleSubmit} className="p-6 md:p-12 space-y-10 md:space-y-14">
+            <form id="form" onSubmit={handleSubmit} className="p-6 md:p-12 space-y-10 md:space-y-14">
 
               {/* Step 1: Date */}
               <section>
